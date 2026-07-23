@@ -1,112 +1,112 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WebAppApi.Dto;
 using WebAppApi.GenericResponse;
 using WebAppApi.IService;
 
-namespace WebAppApi.Controllers
+namespace WebAppApi.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class EmployeeController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class EmployeeController : ControllerBase
+    private readonly IEmployeeService _employeeService;
+
+    public EmployeeController(IEmployeeService employeeService)
     {
-        private readonly IEmployeeService _employeeService;
-        public EmployeeController(IEmployeeService employeeService)
+        _employeeService = employeeService;
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(ResponseResult<IEnumerable<EmployeeDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<IEnumerable<EmployeeDto>>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetAllEmployees(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var result = await _employeeService.GetAllEmployeesAsync(pageNumber, pageSize);
+        var message = result.Message ?? "Employees retrieved successfully.";
+
+        return Ok(ResponseResult<IEnumerable<EmployeeDto>>.Success(
+            result.Data,
+            message,
+            new
+            {
+                result.PageNumber,
+                result.PageSize,
+                result.TotalCount,
+                result.TotalPages,
+                result.HasNextPage,
+                result.HasPreviousPage
+            }));
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(ResponseResult<EmployeeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<EmployeeDto>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult<EmployeeDto>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetEmployeeById(Guid id)
+    {
+        var result = await _employeeService.GetEmployeeById(id);
+        var message = result.Message ?? "Request could not be completed.";
+
+        if (!result.IsSuccess)
         {
-            _employeeService = employeeService;
+            return NotFound(ResponseResult<EmployeeDto>.Failure(null, message));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllEmployees()
+        return Ok(ResponseResult<EmployeeDto>.Success(result.Data, message));
+    }
+
+    [HttpPost]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> CreateEmployee([FromBody] EmployeeCreateDto employeeCreateDto)
+    {
+        var result = await _employeeService.CreateEmployee(employeeCreateDto);
+        var message = result.Message ?? "Request could not be completed.";
+
+        if (!result.IsSuccess)
         {
-            try
-            {
-                var result = await _employeeService.GetAllEmployeeAsync();
-                return Ok(ResponseResult<List<EmployeeDto>>.Success(result.Item2, result.Item2.Count > 0 ? "Employees retrieved successfully" : "No employees found"));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return BadRequest(ResponseResult<string>.Failure(null, message));
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetEmployeeById(Guid id)
+        return Ok(ResponseResult<string>.Success(null, message));
+    }
+
+    [HttpPut]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateEmployee([FromBody] EmployeeUpdateDto employeeUpdateDto)
+    {
+        var result = await _employeeService.UpdateEmployee(employeeUpdateDto);
+        var message = result.Message ?? "Request could not be completed.";
+
+        if (!result.IsSuccess)
         {
-            try
-            {
-                var result = await _employeeService.GetEmployeeById(id);
-                
-                if (result.Item1 == 0)
-                {
-                    return NotFound(ResponseResult<EmployeeDto>.Failure(null, "Employee not found"));
-                }
-                
-                return Ok(ResponseResult<EmployeeDto>.Success(result.Item2, "Employee retrieved successfully"));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return BadRequest(ResponseResult<string>.Failure(null, message));
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateEmployee([FromBody] EmployeeDto employeeDto)
+        return Ok(ResponseResult<string>.Success(null, message));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ResponseResult<string>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DeleteEmployee(Guid id)
+    {
+        var result = await _employeeService.DeleteEmployee(id);
+        var message = result.Message ?? "Request could not be completed.";
+
+        if (!result.IsSuccess)
         {
-            try
-            {
-                var result = await _employeeService.CreateEmployee(employeeDto);
-                
-                if (result.Item1 == 0)
-                {
-                    return BadRequest(ResponseResult<string>.Failure(null, result.Item2));
-                }
-                
-                return Ok(ResponseResult<string>.Success(null, result.Item2));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return NotFound(ResponseResult<string>.Failure(null, message));
         }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateEmployee([FromBody] EmployeeDto employeeDto)
-        {
-            try
-            {
-                var result = await _employeeService.UpdateEmployee(employeeDto);
-                
-                if (result.Item1 == 0)
-                {
-                    return BadRequest(ResponseResult<string>.Failure(null, result.Item2));
-                }
-                
-                return Ok(ResponseResult<string>.Success(null, result.Item2));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteEmployee(Guid id)
-        {
-            try
-            {
-                var result = await _employeeService.DeleteEmployee(id);
-                
-                if (result.Item1 == 0)
-                {
-                    return NotFound(ResponseResult<string>.Failure(null, result.Item2));
-                }
-                
-                return Ok(ResponseResult<string>.Success(null, result.Item2));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
+        return Ok(ResponseResult<string>.Success(null, message));
     }
 }

@@ -119,7 +119,7 @@ ASP.NET Core 10 · Entity Framework Core · SQL Server · JWT Bearer
 | 4 | **JWT Protection** | `[Authorize]` on all employee routes |
 | 5 | **Unified Responses** | `ResponseResult<T>` envelope on every endpoint |
 | 6 | **Auto Migrations** | Schema applied on startup via `Database.Migrate()` |
-| 7 | **OpenAPI Spec** | Available at `/openapi/v1.json` in Development |
+| 7 | **OpenAPI Spec** | Available at `/swagger/v1/swagger.json` in Development |
 | 8 | **Password Security** | ASP.NET Core `PasswordHasher<T>` with rehash support |
 
 ### Design Patterns Used
@@ -154,7 +154,7 @@ dotnet run --project WebAppApi/WebAppApi.csproj
 **Verify it's working:**
 
 ```bash
-curl http://localhost:5159/openapi/v1.json
+curl http://localhost:5159/swagger/v1/swagger.json
 ```
 
 ---
@@ -245,10 +245,10 @@ cd WebAppApi
 dotnet user-secrets init
 dotnet user-secrets set "JWT:Issuer" "webapp-client"
 dotnet user-secrets set "JWT:Audience" "webapp-backend"
-dotnet user-secrets set "JWT:Key" "04b83dfe0e9dadbc32f4354525b521412f0527beff39812c0dcf602aa1b5a648"
+dotnet user-secrets set "JWT:Key" "<64-char-random-secret>"
 ```
 
-> Generate a new key for production. Key must be **64 hex characters** (32 bytes).
+> `appsettings.json` intentionally keeps `JWT:Key` empty. The API expects the key from User Secrets or environment variables.
 
 ### Step 4 — Restore Dependencies
 
@@ -416,7 +416,7 @@ Incoming Request
 
 | Middleware | When Active | Purpose |
 |------------|-------------|---------|
-| OpenAPI | Development only | Serves `/openapi/v1.json` |
+| OpenAPI | Development only | Serves `/swagger/v1/swagger.json` and Swagger UI |
 | HTTPS Redirection | Always | Redirects HTTP → HTTPS |
 | Authentication | Always | Validates JWT Bearer tokens |
 | Authorization | Always | Enforces `[Authorize]` attributes |
@@ -1118,8 +1118,7 @@ ValidateLifetime = true
 ValidateIssuerSigningKey = true
 ValidIssuer    → JWT:Issuer (config)
 ValidAudience  → JWT:Audience (config)
-IssuerSigningKey → JWT:Key (hex)
-TokenDecryptionKey → JWT:Key (hex)
+IssuerSigningKey → JWT:Key
 ```
 
 ---
@@ -1273,7 +1272,7 @@ dotnet publish WebAppApi/WebAppApi.csproj -c Release -o ./publish
 
 # ── User Secrets ─────────────────────────────────────
 dotnet user-secrets list --project WebAppApi
-dotnet user-secrets set "JWT:Key" "your-key" --project WebAppApi
+dotnet user-secrets set "JWT:Key" "<64-char-random-secret>" --project WebAppApi
 ```
 
 ---
@@ -1300,17 +1299,19 @@ Open `WebAppApi/WebAppApi.http` in VS Code or Rider.
 
 ```bash
 # Download spec
-curl http://localhost:5159/openapi/v1.json -o openapi.json
+curl http://localhost:5159/swagger/v1/swagger.json -o openapi.json
 ```
 
 Import `openapi.json` into Swagger UI, Postman, or Insomnia.
 
 ### Automated Tests
 
-> Currently no unit/integration test project is included. Recommended additions:
-> - `WebAppApi.Tests` with xUnit
-> - Integration tests using `WebApplicationFactory`
-> - Auth flow end-to-end tests
+Current automated coverage includes focused `AuthService` unit tests in `WebAppApi.Tests`.
+
+Recommended next additions:
+- `WebApplicationFactory`-based integration tests
+- Auth + employee end-to-end happy path
+- Validation and authorization boundary tests
 
 ---
 
@@ -1381,7 +1382,7 @@ A: Replace `UseSqlServer()` with `UseNpgsql()` and update the NuGet package. Sch
 A: Modify `Expires = DateTime.UtcNow.AddMinutes(30)` in `AuthService.GetJwtToken()`.
 
 **Q: Is Swagger UI included?**
-A: OpenAPI JSON is available at `/openapi/v1.json` in Development. Swagger UI can be added via `Swashbuckle.AspNetCore` package.
+A: Swagger UI is available in Development at `/swagger`, and the JSON spec is served from `/swagger/v1/swagger.json`.
 
 ---
 
@@ -1389,9 +1390,9 @@ A: OpenAPI JSON is available at `/openapi/v1.json` in Development. Swagger UI ca
 
 ### Before Production
 
-- [ ] Remove hardcoded JWT key from `appsettings.json`
-- [ ] Remove hardcoded JWT key from `AuthService.cs` (use `IConfiguration` injection)
-- [ ] Align JWT Issuer/Audience between token creation and validation
+- [x] Keep JWT signing key out of source-controlled `appsettings.json`
+- [x] Load JWT configuration centrally and use it for token generation/validation
+- [x] Align JWT issuer, audience, expiration, and signing key usage
 - [ ] Set `RequireHttpsMetadata = true`
 - [ ] Enforce HTTPS redirection in production
 - [ ] Use Azure Key Vault or similar for secrets

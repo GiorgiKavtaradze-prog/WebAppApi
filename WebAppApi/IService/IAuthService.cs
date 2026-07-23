@@ -1,10 +1,10 @@
-﻿using WebAppApi.Dto;
+﻿using WebAppApi.Common;
+using WebAppApi.Dto;
 
-namespace WebAppApi.IService
-{
-    public interface IAuthService
-    {
-        Task<Tuple<int, TokenDto>> LoginUser(UserDto dto);
-        Task<Tuple<int, string>> RegisterUser(UserDto dto);
-    }
+namespace WebAppApi.IService;
+
+public interface IAuthService
+{    
+    Task<Result<TokenDto>> LoginUser(UserLoginDto dto);
+    Task<Result> RegisterUser(UserRegisterDto dto);
 }
