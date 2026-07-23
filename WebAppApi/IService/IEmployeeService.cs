@@ -1,13 +1,13 @@
-﻿using WebAppApi.Dto;
+﻿using WebAppApi.Common;
+using WebAppApi.Dto;
 
-namespace WebAppApi.IService
+namespace WebAppApi.IService;
+
+public interface IEmployeeService
 {
-    public interface IEmployeeService
-    {
-        Task<Tuple<int, List<EmployeeDto>>> GetAllEmployeeAsync();
-        Task<Tuple<int, string>> CreateEmployee(EmployeeDto employee);
-        Task<Tuple<int, string>> UpdateEmployee(EmployeeDto employee);
-        Task<Tuple<int, string>> DeleteEmployee(Guid id);
-        Task<Tuple<int, EmployeeDto>> GetEmployeeById(Guid id);
-    }
+    Task<PagedResult<EmployeeDto>> GetAllEmployeesAsync(int pageNumber = 1, int pageSize = 10);
+    Task<Result<EmployeeDto>> GetEmployeeById(Guid id);
+    Task<Result> CreateEmployee(EmployeeCreateDto employee);
+    Task<Result> UpdateEmployee(EmployeeUpdateDto employee);
+    Task<Result> DeleteEmployee(Guid id);
 }

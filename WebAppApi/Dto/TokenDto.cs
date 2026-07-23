@@ -1,8 +1,8 @@
-﻿namespace WebAppApi.Dto
+namespace WebAppApi.Dto
 {
     public class TokenDto
     {
         public string Token { get; set; } = string.Empty;
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
 }

@@ -1,13 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+namespace WebAppApi.Dto;
 
-namespace WebAppApi.Entities;
-
-public class Salary
+public class SalaryDto
 {
-    [Key]
     public int SalaryBandId { get; set; }
-
     public decimal MinSalary { get; set; }
-
     public decimal MaxSalary { get; set; }
 }
